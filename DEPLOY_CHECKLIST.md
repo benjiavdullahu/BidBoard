@@ -26,13 +26,14 @@
    - [ ] `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` - Your Stripe publishable key
    - [ ] `STRIPE_SECRET_KEY` - Your Stripe secret key
    - [ ] `STRIPE_WEBHOOK_SECRET` - (Add after creating webhook)
+   - [ ] `NEXT_PUBLIC_BASE_URL` - Your app's URL (e.g., https://bidboard.site)
 
 ## Post-Deployment
 
 1. **Set up Stripe Webhook:**
 
    - [ ] Go to Stripe Dashboard → Webhooks
-   - [ ] Add endpoint: `https://YOUR-APP.vercel.app/api/stripe-webhook`
+   - [ ] Add endpoint: `https://bidboard.site/api/stripe-webhook`
    - [ ] Select event: `checkout.session.completed`
    - [ ] Copy signing secret
    - [ ] Add `STRIPE_WEBHOOK_SECRET` to Vercel environment variables

@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     
     console.log('Checkout request:', { name, amount })
     console.log('Stripe key exists:', !!process.env.STRIPE_SECRET_KEY)
-    console.log('App URL:', process.env.NEXT_PUBLIC_APP_URL)
+    console.log('Base URL:', process.env.NEXT_PUBLIC_BASE_URL)
 
     // Convert dollars to cents
     const amountInCents = Math.round(parseFloat(amount) * 100)
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
       (process.env.NODE_ENV === 'production' 
-        ? 'https://bidboard.vercel.app' 
+        ? 'https://bidboard.site' 
         : 'http://localhost:3000');
 
     // Create Stripe checkout session
