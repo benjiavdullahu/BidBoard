@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
 import { loadStripe } from "@stripe/stripe-js";
@@ -17,6 +17,28 @@ interface Entry {
   createdAt: string;
 }
 
+// Separate component that uses useSearchParams
+function PaymentStatus() {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    // Check for success or cancel params
+    if (searchParams.get("success") === "true") {
+      toast.success(
+        "Payment successful! You should appear on the leaderboard soon."
+      );
+      // Clean up URL
+      window.history.replaceState({}, "", "/");
+    } else if (searchParams.get("canceled") === "true") {
+      toast.error("Payment canceled. Ready to try again?");
+      // Clean up URL
+      window.history.replaceState({}, "", "/");
+    }
+  }, [searchParams]);
+
+  return null;
+}
+
 export default function Home() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,8 +48,6 @@ export default function Home() {
     name: "",
     amount: "",
   });
-
-  const searchParams = useSearchParams();
 
   // Load theme preference
   useEffect(() => {
@@ -60,21 +80,6 @@ export default function Home() {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    // Check for success or cancel params
-    if (searchParams.get("success") === "true") {
-      toast.success(
-        "Payment successful! You should appear on the leaderboard soon."
-      );
-      // Clean up URL
-      window.history.replaceState({}, "", "/");
-    } else if (searchParams.get("canceled") === "true") {
-      toast.error("Payment canceled. Ready to try again?");
-      // Clean up URL
-      window.history.replaceState({}, "", "/");
-    }
-  }, [searchParams]);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -153,6 +158,11 @@ export default function Home() {
     >
       <Toaster position="top-center" />
 
+      {/* Add Suspense boundary for useSearchParams */}
+      <Suspense fallback={null}>
+        <PaymentStatus />
+      </Suspense>
+
       {/* Theme Toggle Button */}
       <button
         onClick={toggleTheme}
@@ -221,7 +231,7 @@ export default function Home() {
                 isLightMode ? "text-gray-600" : "text-gray-400"
               }`}
             >
-              Pay to flex. The internet's most expensive leaderboard.
+              Pay to flex. The internet&apos;s most expensive leaderboard.
             </p>
             <button
               onClick={() => setShowModal(true)}
@@ -292,7 +302,6 @@ export default function Home() {
                 const isTop3 = index < 3;
                 const isTop10 = index < 10;
                 const isTop25 = index < 25;
-                const isTop50 = index < 50;
 
                 return (
                   <motion.div
