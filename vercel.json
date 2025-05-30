@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "src/app/api/create-checkout/route.ts": {
+      "maxDuration": 10
+    },
+    "src/app/api/stripe-webhook/route.ts": {
+      "maxDuration": 10
+    },
+    "src/app/api/leaderboard/route.ts": {
+      "maxDuration": 10
+    }
+  }
+} 

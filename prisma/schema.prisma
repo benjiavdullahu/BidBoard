@@ -1,0 +1,29 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Entry {
+  id          String   @id @default(cuid())
+  name        String
+  amount      Int      // Amount in cents
+  link        String?
+  message     String?
+  logoUrl     String?
+  email       String   // For Stripe receipt
+  stripeSessionId String? @unique
+  paid        Boolean  @default(false)
+  contributions Int    @default(1) // Track number of payments
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([amount])
+  @@index([paid])
+} 
