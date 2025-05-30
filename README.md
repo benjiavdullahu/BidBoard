@@ -11,7 +11,7 @@
 
 BIDBOARD is a viral-ready leaderboard where people pay real money to claim spots. It's simple: the more you pay, the higher you rank. Top 10 spots get special perks like custom messages, links, and logos.
 
-Think of it as the internet's most expensive dick-measuring contest. When streamers like xQc see others flexing with $500+ spots, they might drop $1k just to claim #1. That's the viral loop.
+Think of it as the internet's most expensive "who's the best" Tournament. When streamers like xQc see others flexing with $500+ spots, they might drop $1k just to claim #1. That's the viral loop.
 
 ## ✨ Features
 
