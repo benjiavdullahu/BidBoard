@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
 import { loadStripe } from "@stripe/stripe-js";
 import { useSearchParams } from "next/navigation";
+import { UploadButton } from "@/utils/uploadthing";
 
 // Types
 interface Entry {
@@ -47,7 +48,10 @@ export default function Home() {
   const [formData, setFormData] = useState({
     name: "",
     amount: "",
+    logoUrl: "",
+    message: "",
   });
+  const [isUploading, setIsUploading] = useState(false);
 
   // Load theme preference
   useEffect(() => {
@@ -88,11 +92,24 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
+  // Check if the bid amount would make them #1
+  const wouldBeFirst = () => {
+    const bidAmount = Number(formData.amount) * 100; // Convert to cents
+    if (!entries.length) return true;
+    return bidAmount > entries[0]?.amount;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (Number(formData.amount) < 1) {
       toast.error("Minimum bid is $1");
+      return;
+    }
+
+    // Validate message length if provided
+    if (formData.message && formData.message.length > 100) {
+      toast.error("Message must be 100 characters or less");
       return;
     }
 
@@ -267,6 +284,15 @@ export default function Home() {
               animate={{ scale: 1 }}
               className="text-center"
             >
+              {entries[0].logoUrl && (
+                <div className="mb-4">
+                  <img
+                    src={entries[0].logoUrl}
+                    alt={entries[0].name}
+                    className="w-32 h-32 mx-auto rounded-full object-cover border-4 border-yellow-500 shadow-xl"
+                  />
+                </div>
+              )}
               <h2
                 className={`text-4xl font-black ${
                   isLightMode ? "text-yellow-600" : "text-yellow-500"
@@ -281,6 +307,15 @@ export default function Home() {
               >
                 {formatAmount(entries[0].amount)}
               </p>
+              {entries[0].message && (
+                <p
+                  className={`mt-4 text-lg italic max-w-2xl mx-auto ${
+                    isLightMode ? "text-gray-700" : "text-gray-300"
+                  }`}
+                >
+                  "{entries[0].message}"
+                </p>
+              )}
             </motion.div>
           </div>
         </div>
@@ -492,6 +527,105 @@ export default function Home() {
                       placeholder="100.00"
                     />
                   </div>
+
+                  {/* Show additional fields if bidding for #1 */}
+                  {wouldBeFirst() && (
+                    <>
+                      <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                        <p className="text-sm font-bold text-yellow-500 mb-3">
+                          👑 You're bidding for the #1 spot! Add your picture
+                          and message:
+                        </p>
+
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">
+                              Upload Your Picture (optional)
+                            </label>
+                            {formData.logoUrl ? (
+                              <div className="space-y-2">
+                                <img
+                                  src={formData.logoUrl}
+                                  alt="Uploaded"
+                                  className="w-24 h-24 mx-auto rounded-full object-cover border-2 border-yellow-500"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setFormData({ ...formData, logoUrl: "" })
+                                  }
+                                  className="w-full px-3 py-1 text-sm bg-red-500/20 text-red-500 rounded hover:bg-red-500/30 transition-colors"
+                                >
+                                  Remove Image
+                                </button>
+                              </div>
+                            ) : (
+                              <UploadButton
+                                endpoint="imageUploader"
+                                onUploadBegin={() => {
+                                  setIsUploading(true);
+                                }}
+                                onClientUploadComplete={(res) => {
+                                  setIsUploading(false);
+                                  if (res?.[0]?.url) {
+                                    setFormData({
+                                      ...formData,
+                                      logoUrl: res[0].url,
+                                    });
+                                    toast.success(
+                                      "Image uploaded successfully!"
+                                    );
+                                  }
+                                }}
+                                onUploadError={(error: Error) => {
+                                  setIsUploading(false);
+                                  toast.error(
+                                    `Upload failed: ${error.message}`
+                                  );
+                                }}
+                                appearance={{
+                                  button: `ut-ready:bg-gradient-to-r ut-ready:from-purple-600 ut-ready:to-blue-600 ut-uploading:cursor-not-allowed ut-uploading:bg-gray-500 ${
+                                    isLightMode
+                                      ? "ut-ready:text-white ut-uploading:text-gray-300"
+                                      : "ut-ready:text-white ut-uploading:text-gray-400"
+                                  }`,
+                                  container: "w-full",
+                                  allowedContent: "text-xs text-gray-500",
+                                }}
+                              />
+                            )}
+                            <p className="text-xs text-gray-500 mt-1">
+                              Max 4MB, JPG/PNG/GIF/WebP
+                            </p>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium mb-2">
+                              Your Message (optional)
+                            </label>
+                            <textarea
+                              value={formData.message}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  message: e.target.value,
+                                })
+                              }
+                              maxLength={100}
+                              rows={2}
+                              className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                                isLightMode ? "bg-gray-100" : "bg-gray-800"
+                              }`}
+                              placeholder="Your message to the world (max 100 characters)"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              {formData.message.length}/100 characters
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="mt-6 flex gap-4">
@@ -508,9 +642,12 @@ export default function Home() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg font-bold hover:scale-105 transition-transform text-white"
+                    disabled={isUploading}
+                    className={`flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg font-bold hover:scale-105 transition-transform text-white ${
+                      isUploading ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
-                    Pay Now
+                    {isUploading ? "Uploading..." : "Pay Now"}
                   </button>
                 </div>
               </form>

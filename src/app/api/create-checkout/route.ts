@@ -7,9 +7,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, amount } = await req.json()
+    const { name, amount, logoUrl, message } = await req.json()
     
-    console.log('Checkout request:', { name, amount })
+    console.log('Checkout request:', { name, amount, logoUrl, message })
     console.log('Stripe key exists:', !!process.env.STRIPE_SECRET_KEY)
     console.log('Base URL:', process.env.NEXT_PUBLIC_BASE_URL)
 
@@ -47,6 +47,8 @@ export async function POST(req: NextRequest) {
       ],
       metadata: {
         name,
+        ...(logoUrl && { logoUrl }),
+        ...(message && { message }),
       },
     })
 
