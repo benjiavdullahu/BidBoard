@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
       (process.env.NODE_ENV === 'production' 
-        ? `https://${process.env.VERCEL_URL}` 
+        ? 'https://bidboard.vercel.app' 
         : 'http://localhost:3000');
 
     // Create Stripe checkout session
