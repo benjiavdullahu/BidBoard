@@ -28,6 +28,7 @@ export default function TestUpload() {
         {imageUrl && (
           <div className="mt-8">
             <p className="mb-4">Uploaded image URL: {imageUrl}</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={imageUrl}
               alt="Uploaded"

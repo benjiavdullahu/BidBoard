@@ -286,6 +286,7 @@ export default function Home() {
             >
               {entries[0].logoUrl && (
                 <div className="mb-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={entries[0].logoUrl}
                     alt={entries[0].name}
@@ -313,7 +314,7 @@ export default function Home() {
                     isLightMode ? "text-gray-700" : "text-gray-300"
                   }`}
                 >
-                  "{entries[0].message}"
+                  &ldquo;{entries[0].message}&rdquo;
                 </p>
               )}
             </motion.div>
@@ -533,8 +534,8 @@ export default function Home() {
                     <>
                       <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                         <p className="text-sm font-bold text-yellow-500 mb-3">
-                          👑 You're bidding for the #1 spot! Add your picture
-                          and message:
+                          👑 You&apos;re bidding for the #1 spot! Add your
+                          picture and message:
                         </p>
 
                         <div className="space-y-4">
@@ -544,6 +545,7 @@ export default function Home() {
                             </label>
                             {formData.logoUrl ? (
                               <div className="space-y-2">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                   src={formData.logoUrl}
                                   alt="Uploaded"

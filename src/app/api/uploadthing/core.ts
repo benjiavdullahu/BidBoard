@@ -1,5 +1,4 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
-import { UploadThingError } from "uploadthing/server";
 
 const f = createUploadthing();
 
@@ -17,13 +16,13 @@ export const ourFileRouter = {
     },
   })
     // Set permissions and file types for this FileRoute
-    .middleware(async ({ req }) => {
+    .middleware(async () => {
       // This code runs on your server before upload
       // Since this is for the #1 bidder, we'll allow anyone to upload
       // The actual validation happens when they submit the payment
       return { uploadedAt: Date.now() };
     })
-    .onUploadComplete(async ({ metadata, file }) => {
+    .onUploadComplete(async ({ file }) => {
       // This code RUNS ON YOUR SERVER after upload
       console.log("Upload complete:", file.url);
       
