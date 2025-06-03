@@ -12,10 +12,10 @@ interface Entry {
   id: string;
   name: string;
   amount: number;
-  link?: string;
   message?: string;
   logoUrl?: string;
   createdAt: string;
+  contributions: number;
 }
 
 // Separate component that uses useSearchParams
@@ -28,6 +28,36 @@ function PaymentStatus() {
       toast.success(
         "Payment successful! You should appear on the leaderboard soon."
       );
+
+      // Check if this is a returning user who might want to update their logo
+      setTimeout(async () => {
+        try {
+          const res = await fetch("/api/leaderboard");
+          const data = await res.json();
+          const entries = data.entries || [];
+          const leader = entries[0];
+
+          // Only show update option if:
+          // 1. They're now #1
+          // 2. They've contributed before (contributions > 1)
+          // This covers both: updating existing logo OR adding a logo for the first time
+          if (leader && leader.contributions > 1) {
+            // Trigger logo update modal in parent component
+            window.dispatchEvent(
+              new CustomEvent("showLogoUpdate", {
+                detail: {
+                  logoUrl: leader.logoUrl,
+                  userId: leader.id,
+                  message: leader.message,
+                },
+              })
+            );
+          }
+        } catch (error) {
+          console.error("Error checking for logo update:", error);
+        }
+      }, 3000); // Wait a bit longer for webhook to process
+
       // Clean up URL
       window.history.replaceState({}, "", "/");
     } else if (searchParams.get("canceled") === "true") {
@@ -52,6 +82,10 @@ export default function Home() {
     message: "",
   });
   const [isUploading, setIsUploading] = useState(false);
+  const [showLogoUpdateModal, setShowLogoUpdateModal] = useState(false);
+  const [currentUserLogo, setCurrentUserLogo] = useState<string | null>(null);
+  const [currentUserMessage, setCurrentUserMessage] = useState<string>("");
+  const [newMessage, setNewMessage] = useState<string>("");
 
   // Load theme preference
   useEffect(() => {
@@ -91,6 +125,27 @@ export default function Home() {
     const interval = setInterval(fetchLeaderboard, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  // Listen for logo update events
+  useEffect(() => {
+    const handleLogoUpdate = (event: any) => {
+      setCurrentUserLogo(event.detail.logoUrl);
+      setCurrentUserMessage(event.detail.message || "");
+      setNewMessage(event.detail.message || ""); // Pre-populate with current message
+      setShowLogoUpdateModal(true);
+    };
+
+    window.addEventListener("showLogoUpdate", handleLogoUpdate);
+    return () => window.removeEventListener("showLogoUpdate", handleLogoUpdate);
+  }, []);
+
+  // Reset modal state when closing
+  const closeLogoUpdateModal = () => {
+    setShowLogoUpdateModal(false);
+    setCurrentUserLogo(null);
+    setCurrentUserMessage("");
+    setNewMessage("");
+  };
 
   // Check if the bid amount would make them #1
   const wouldBeFirst = () => {
@@ -653,6 +708,199 @@ export default function Home() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Logo Update Modal */}
+      <AnimatePresence>
+        {showLogoUpdateModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className={`fixed inset-0 backdrop-blur-sm z-50 flex items-center justify-center p-4 ${
+              isLightMode ? "bg-black/50" : "bg-black/80"
+            }`}
+            onClick={closeLogoUpdateModal}
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className={`rounded-xl p-8 max-w-md w-full ${
+                isLightMode ? "bg-white shadow-2xl" : "bg-gray-900"
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-2xl font-bold mb-6">
+                🎉 Welcome back to #1!
+              </h3>
+              <p className="text-sm text-gray-500 mb-4">
+                {currentUserLogo || currentUserMessage
+                  ? "You're the leader again! Want to update your logo or message?"
+                  : "You're the leader again! Want to add a logo or message this time?"}
+              </p>
+
+              <div className="space-y-4">
+                {currentUserLogo && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Current Logo:
+                    </label>
+                    <div className="mb-4">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={currentUserLogo}
+                        alt="Current logo"
+                        className="w-24 h-24 mx-auto rounded-full object-cover border-2 border-yellow-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {currentUserMessage && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Current Message:
+                    </label>
+                    <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                      <p className="italic">"{currentUserMessage}"</p>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    {currentUserLogo
+                      ? "Upload New Logo (optional):"
+                      : "Upload Your Logo (optional):"}
+                  </label>
+                  <UploadButton
+                    endpoint="imageUploader"
+                    onUploadBegin={() => {
+                      setIsUploading(true);
+                    }}
+                    onClientUploadComplete={async (res) => {
+                      setIsUploading(false);
+                      if (res?.[0]?.url) {
+                        try {
+                          // Update the logo in the database
+                          const response = await fetch("/api/update-logo", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              logoUrl: res[0].url,
+                              message: newMessage || null, // Include message update
+                              entryId: entries[0]?.id,
+                            }),
+                          });
+
+                          if (response.ok) {
+                            toast.success(
+                              "Logo and message updated successfully!"
+                            );
+                            closeLogoUpdateModal();
+                            fetchLeaderboard(); // Refresh to show new logo
+                          } else {
+                            toast.error("Failed to update logo");
+                          }
+                        } catch (error) {
+                          toast.error("Error updating logo");
+                          console.error(error);
+                        }
+                      }
+                    }}
+                    onUploadError={(error: Error) => {
+                      setIsUploading(false);
+                      toast.error(`Upload failed: ${error.message}`);
+                    }}
+                    appearance={{
+                      button: `ut-ready:bg-gradient-to-r ut-ready:from-purple-600 ut-ready:to-blue-600 ut-uploading:cursor-not-allowed ut-uploading:bg-gray-500 ${
+                        isLightMode
+                          ? "ut-ready:text-white ut-uploading:text-gray-300"
+                          : "ut-ready:text-white ut-uploading:text-gray-400"
+                      }`,
+                      container: "w-full",
+                      allowedContent: "text-xs text-gray-500",
+                    }}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Max 4MB, JPG/PNG/GIF/WebP
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    {currentUserMessage
+                      ? "Update Your Message (optional):"
+                      : "Add Your Message (optional):"}
+                  </label>
+                  <textarea
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    maxLength={100}
+                    rows={2}
+                    className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                      isLightMode ? "bg-gray-100" : "bg-gray-800"
+                    }`}
+                    placeholder="Your message to the world (max 100 characters)"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {newMessage.length}/100 characters
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 flex gap-4">
+                <button
+                  type="button"
+                  onClick={closeLogoUpdateModal}
+                  className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
+                    isLightMode
+                      ? "bg-gray-200 hover:bg-gray-300"
+                      : "bg-gray-800 hover:bg-gray-700"
+                  }`}
+                >
+                  {currentUserLogo || currentUserMessage
+                    ? "Keep Current"
+                    : "Skip"}
+                </button>
+
+                {/* Update message only button */}
+                {newMessage !== currentUserMessage && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const response = await fetch("/api/update-logo", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            message: newMessage || null,
+                            entryId: entries[0]?.id,
+                          }),
+                        });
+
+                        if (response.ok) {
+                          toast.success("Message updated successfully!");
+                          closeLogoUpdateModal();
+                          fetchLeaderboard();
+                        } else {
+                          toast.error("Failed to update message");
+                        }
+                      } catch (error) {
+                        toast.error("Error updating message");
+                        console.error(error);
+                      }
+                    }}
+                    className={`flex-1 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg font-bold hover:scale-105 transition-transform text-white`}
+                  >
+                    Update Message
+                  </button>
+                )}
+              </div>
             </motion.div>
           </motion.div>
         )}

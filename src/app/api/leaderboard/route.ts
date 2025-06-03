@@ -10,9 +10,9 @@ export async function GET() {
         id: true,
         name: true,
         amount: true,
-        link: true,
         message: true,
         logoUrl: true,
+        contributions: true,
         createdAt: true
       }
     })

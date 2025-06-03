@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
             email: `anonymous_${Date.now()}@bidboard.com`,
             stripeSessionId: session.id,
             paid: true,
-            // Only set logoUrl and message if they exist
+            // Keep logo permanently - don't delete it when they lose #1
             ...(logoUrl && { logoUrl }),
             ...(message && { message }),
           },
@@ -75,9 +75,11 @@ export async function POST(req: NextRequest) {
             data: {
               amount: updatedAmount,
               name: name, // Update name in case they changed it
-              // Only update logoUrl and message if they're becoming #1
-              ...(willBeFirst && logoUrl && { logoUrl }),
+              // Update logo if provided (keep it permanently)
+              ...(logoUrl && { logoUrl }),
+              // Update message if becoming #1
               ...(willBeFirst && message && { message }),
+              contributions: existingEntry.contributions + 1, // Increment contribution count
               updatedAt: new Date()
             }
           })
@@ -99,8 +101,9 @@ export async function POST(req: NextRequest) {
               email: email,
               stripeSessionId: session.id,
               paid: true,
-              // Only set logoUrl and message if they're becoming #1
-              ...(willBeFirst && logoUrl && { logoUrl }),
+              // Keep logo permanently
+              ...(logoUrl && { logoUrl }),
+              // Set message if becoming #1
               ...(willBeFirst && message && { message }),
             },
           })
@@ -108,26 +111,15 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Clear logoUrl and message from non-#1 entries
+      // Only clear messages from non-#1 entries (keep logos!)
       // Get the current #1 after all updates
       const newLeader = await prisma.entry.findFirst({
         where: { paid: true },
         orderBy: { amount: 'desc' },
       })
 
-      if (newLeader) {
-        // Clear logoUrl and message from all entries except the new leader
-        await prisma.entry.updateMany({
-          where: {
-            paid: true,
-            id: { not: newLeader.id }
-          },
-          data: {
-            logoUrl: null,
-            message: null
-          }
-        })
-      }
+      // Note: We no longer clear messages - they're kept permanently like logos
+      // Only the frontend will show the current #1's message
 
     } catch (error) {
       console.error('Error processing entry:', error)
