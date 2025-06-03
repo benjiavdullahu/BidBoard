@@ -14,7 +14,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Build update data object
-    const updateData: any = {
+    const updateData: {
+      updatedAt: Date;
+      logoUrl?: string;
+      message?: string | null;
+    } = {
       updatedAt: new Date()
     }
 

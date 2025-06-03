@@ -128,15 +128,28 @@ export default function Home() {
 
   // Listen for logo update events
   useEffect(() => {
-    const handleLogoUpdate = (event: any) => {
+    const handleLogoUpdate = (
+      event: CustomEvent<{
+        logoUrl: string | null;
+        userId: string;
+        message: string | null;
+      }>
+    ) => {
       setCurrentUserLogo(event.detail.logoUrl);
       setCurrentUserMessage(event.detail.message || "");
       setNewMessage(event.detail.message || ""); // Pre-populate with current message
       setShowLogoUpdateModal(true);
     };
 
-    window.addEventListener("showLogoUpdate", handleLogoUpdate);
-    return () => window.removeEventListener("showLogoUpdate", handleLogoUpdate);
+    window.addEventListener(
+      "showLogoUpdate",
+      handleLogoUpdate as EventListener
+    );
+    return () =>
+      window.removeEventListener(
+        "showLogoUpdate",
+        handleLogoUpdate as EventListener
+      );
   }, []);
 
   // Reset modal state when closing
@@ -766,7 +779,9 @@ export default function Home() {
                       Current Message:
                     </label>
                     <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                      <p className="italic">"{currentUserMessage}"</p>
+                      <p className="italic">
+                        &ldquo;{currentUserMessage}&rdquo;
+                      </p>
                     </div>
                   </div>
                 )}

@@ -111,13 +111,6 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Only clear messages from non-#1 entries (keep logos!)
-      // Get the current #1 after all updates
-      const newLeader = await prisma.entry.findFirst({
-        where: { paid: true },
-        orderBy: { amount: 'desc' },
-      })
-
       // Note: We no longer clear messages - they're kept permanently like logos
       // Only the frontend will show the current #1's message
 
